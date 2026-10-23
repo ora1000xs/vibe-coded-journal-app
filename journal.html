@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vibe Journal - My Diary</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header align="center">
+            <h1 id="welcomeHeader">MY DIARY</h1>
+            <p class="tagline"><i>today's pages, tomorrow's memories</i></p>
+            <button class="logout-btn" onclick="handleLogout()">Logout</button>
+        </header>
+
+        <div class="journal-layout">
+            <div class="entries-list">
+                <h3>Diary Pages</h3>
+                <button class="new-btn" onclick="newEntry()">+ New Page</button>
+                <div id="entriesContainer"></div>
+            </div>
+
+            <div class="entry-editor diary-page">
+                <div class="page-header">
+                    <h3 id="editorTitle" class="page-title">New Page</h3>
+                    <div class="page-date-row">
+                        <label for="entryDate">Date</label>
+                        <input type="date" id="entryDate">
+                        <label for="entryTitle" class="title-label">Title</label>
+                        <input type="text" id="entryTitle" placeholder="Today was about...">
+                    </div>
+                </div>
+
+                <div class="mood-row">
+                    <label>How are you feeling?</label>
+                    <div class="mood-buttons" id="moodButtons">
+                        <button type="button" class="mood-btn" data-mood="😊" onclick="setMood('😊')">😊</button>
+                        <button type="button" class="mood-btn" data-mood="😄" onclick="setMood('😄')">😄</button>
+                        <button type="button" class="mood-btn" data-mood="😌" onclick="setMood('😌')">😌</button>
+                        <button type="button" class="mood-btn" data-mood="🥰" onclick="setMood('🥰')">🥰</button>
+                        <button type="button" class="mood-btn" data-mood="😢" onclick="setMood('😢')">😢</button>
+                        <button type="button" class="mood-btn" data-mood="😤" onclick="setMood('😤')">😤</button>
+                        <button type="button" class="mood-btn" data-mood="😴" onclick="setMood('😴')">😴</button>
+                        <button type="button" class="mood-btn" data-mood="🤔" onclick="setMood('🤔')">🤔</button>
+                    </div>
+                    <span class="selected-mood" id="selectedMood"></span>
+                </div>
+
+                <div class="diary-section">
+                    <label class="section-label">📝 Dear diary...</label>
+                    <textarea id="entryContent" class="diary-textarea" placeholder="Write your heart out..."></textarea>
+                </div>
+
+                <div class="diary-section">
+                    <label class="section-label">🎵 Song of the Day (YouTube / YouTube Music)</label>
+                    <p class="hint">Paste a YouTube or YouTube Music link to capture the vibe of the day</p>
+                    <div class="music-input-row">
+                        <input type="text" id="musicLink" placeholder="https://music.youtube.com/watch?v=... or https://www.youtube.com/watch?v=...">
+                        <button class="attach-btn" onclick="parseMusicLink()">Attach</button>
+                    </div>
+                    <div id="musicEmbed" class="music-embed hidden"></div>
+                </div>
+
+                <div class="diary-section">
+                    <label class="section-label">📷 Moments from today</label>
+                    <div class="media-buttons">
+                        <label class="attach-btn file-label">
+                            📁 Add Photos
+                            <input type="file" id="photoUpload" accept="image/*" multiple onchange="handlePhotoUpload(event)" style="display:none">
+                        </label>
+                        <button class="attach-btn" onclick="openCamera()">📸 Take Photo</button>
+                        <button class="attach-btn danger hidden" id="closeCameraBtn" onclick="closeCamera()">✕ Close Camera</button>
+                    </div>
+
+                    <div id="cameraArea" class="camera-area hidden">
+                        <video id="cameraVideo" autoplay playsinline></video>
+                        <canvas id="cameraCanvas" class="hidden"></canvas>
+                        <div class="camera-controls">
+                            <button class="save-btn" onclick="snapPhoto()">📸 Capture</button>
+                        </div>
+                    </div>
+
+                    <div id="photoGallery" class="photo-gallery"></div>
+                </div>
+
+                <div class="action-row">
+                    <button class="save-btn" onclick="saveEntry()">💾 Save Page</button>
+                    <button class="delete-btn hidden" id="deleteBtn" onclick="deleteEntry()">🗑️ Delete Page</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+    <script>checkAuthAndLoad();</script>
+</body>
+</html>

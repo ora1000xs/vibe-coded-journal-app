@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vibe Journal - Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header align="center">
+            <h1>VIBE JOURNAL</h1>
+            <p><i>your thoughts, safe and sound</i></p>
+        </header>
+
+        <div class="auth-box">
+            <div class="tabs">
+                <button id="loginTab" class="tab-btn active" onclick="switchTab('login')">Login</button>
+                <button id="registerTab" class="tab-btn" onclick="switchTab('register')">Register</button>
+            </div>
+
+            <div id="loginForm" class="form-box">
+                <form onsubmit="handleLogin(event)">
+                    <label for="loginUsername">Username</label><br>
+                    <input type="text" id="loginUsername" name="loginUsername" placeholder="YourUsername" required><br>
+
+                    <label for="loginPassword">Password</label><br>
+                    <input type="password" id="loginPassword" name="loginPassword" placeholder="YourPassword" required><br>
+
+                    <button type="submit">Enter</button>
+                </form>
+            </div>
+
+            <div id="registerForm" class="form-box hidden">
+                <form onsubmit="handleRegister(event)">
+                    <label for="regUsername">Username</label><br>
+                    <input type="text" id="regUsername" name="regUsername" placeholder="Choose a username" required><br>
+
+                    <label for="regPassword">Password</label><br>
+                    <input type="password" id="regPassword" name="regPassword" placeholder="Choose a password" required><br>
+
+                    <label for="regConfirm">Confirm Password</label><br>
+                    <input type="password" id="regConfirm" name="regConfirm" placeholder="Confirm password" required><br>
+
+                    <button type="submit">Create Account</button>
+                </form>
+            </div>
+
+            <p id="errorMsg" class="error"></p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
