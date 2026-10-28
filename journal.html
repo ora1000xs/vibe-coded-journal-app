@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Vibe Journal - My Diary</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -16,6 +18,8 @@
             <div class="entries-list">
                 <h3>Diary Pages</h3>
                 <button class="new-btn" onclick="newEntry()">+ New Page</button>
+                <label class="sr-only" for="entrySearch">Search diary pages</label>
+                <input id="entrySearch" class="entry-search" type="search" placeholder="Search pages..." oninput="filterEntries()">
                 <div id="entriesContainer"></div>
             </div>
 
@@ -24,7 +28,7 @@
                     <h3 id="editorTitle" class="page-title">New Page</h3>
                     <div class="page-date-row">
                         <label for="entryDate">Date</label>
-                        <input type="date" id="entryDate">
+                        <input type="date" id="entryDate" required>
                         <label for="entryTitle" class="title-label">Title</label>
                         <input type="text" id="entryTitle" placeholder="Today was about...">
                     </div>

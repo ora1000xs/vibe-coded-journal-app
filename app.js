@@ -1,6 +1,7 @@
 const AUTH_KEY = 'vibe_journal_auth_v2';
 const DB_NAME = 'VibeJournalDB';
 const DB_VERSION = 1;
+const MAX_PHOTO_BYTES = 8 * 1024 * 1024;
 
 let currentUser = null;
 let currentEntryId = null;
@@ -255,17 +256,22 @@ async function handleRegister(e) {
     if (password.length < 4) { showError('Password must be at least 4 characters'); return; }
     if (password !== confirm) { showError('Passwords do not match'); return; }
 
-    const existing = await getUserDB(username);
-    if (existing) { showError('Username already exists'); return; }
+    try {
+        const existing = await getUserDB(username);
+        if (existing) { showError('Username already exists'); return; }
 
-    await saveUserDB({
-        username: username,
-        passwordHash: strongHash(password),
-        createdAt: new Date().toISOString()
-    });
+        await saveUserDB({
+            username: username,
+            passwordHash: strongHash(password),
+            createdAt: new Date().toISOString()
+        });
 
-    alert('Account created! Please login.');
-    switchTab('login');
+        alert('Account created! Please login.');
+        switchTab('login');
+    } catch (error) {
+        console.error('Could not create account', error);
+        showError('Could not save your account. Check that browser storage is available and try again.');
+    }
 }
 
 async function handleLogin(e) {
@@ -273,19 +279,23 @@ async function handleLogin(e) {
     const username = document.getElementById('loginUsername').value.trim();
     const password = document.getElementById('loginPassword').value;
 
-    const user = await getUserDB(username);
-    if (!user) { showError('Username not found'); return; }
-    if (user.passwordHash !== strongHash(password)) { showError('Incorrect password'); return; }
+    try {
+        const user = await getUserDB(username);
+        if (!user) { showError('Username not found'); return; }
+        if (user.passwordHash !== strongHash(password)) { showError('Incorrect password'); return; }
 
-    const sessionKey = simpleHash(username + Date.now());
-    encryptionKey = strongHash(password + username);
-    localStorage.setItem(AUTH_KEY, JSON.stringify({
-        username: username,
-        sessionKey: sessionKey,
-        encKey: encryptionKey
-    }));
-
-    window.location.href = 'journal.html';
+        const sessionKey = simpleHash(username + Date.now());
+        encryptionKey = strongHash(password + username);
+        localStorage.setItem(AUTH_KEY, JSON.stringify({
+            username: username,
+            sessionKey: sessionKey,
+            encKey: encryptionKey
+        }));
+        window.location.href = 'journal.html';
+    } catch (error) {
+        console.error('Could not sign in', error);
+        showError('Could not open your account. Check that browser storage is available and try again.');
+    }
 }
 
 function handleLogout() {
@@ -299,7 +309,17 @@ function handleLogout() {
 async function checkAuthAndLoad() {
     const auth = localStorage.getItem(AUTH_KEY);
     if (!auth) { window.location.href = 'index.html'; return; }
-    const authData = JSON.parse(auth);
+    let authData;
+    try { authData = JSON.parse(auth); } catch (error) {
+        localStorage.removeItem(AUTH_KEY);
+        window.location.href = 'index.html';
+        return;
+    }
+    if (!authData.username || !authData.encKey) {
+        localStorage.removeItem(AUTH_KEY);
+        window.location.href = 'index.html';
+        return;
+    }
     const user = await getUserDB(authData.username);
     if (!user) { handleLogout(); return; }
 
@@ -346,6 +366,8 @@ async function loadEntries() {
         previewDiv.className = 'entry-item-preview';
         const plain = decrypt(entry.content, encryptionKey);
         previewDiv.textContent = plain.substring(0, 50) + (plain.length > 50 ? '...' : '');
+        item.dataset.search = [decrypt(entry.title, encryptionKey), plain, entry.date]
+            .join(' ').toLocaleLowerCase();
 
         item.appendChild(titleRow);
         item.appendChild(dateDiv);
@@ -354,7 +376,8 @@ async function loadEntries() {
         const media = document.createElement('div');
         media.className = 'entry-item-media';
         let hasMedia = false;
-        const music = JSON.parse(decrypt(entry.music, encryptionKey) || 'null');
+        let music = null;
+        try { music = JSON.parse(decrypt(entry.music, encryptionKey) || 'null'); } catch (error) { /* Skip malformed metadata. */ }
         if (music && music.videoId) {
             const m = document.createElement('span');
             m.textContent = '🎵';
@@ -380,6 +403,15 @@ async function loadEntries() {
 
         entriesList.appendChild(item);
     }
+    filterEntries();
+}
+
+function filterEntries() {
+    const input = document.getElementById('entrySearch');
+    const query = input ? input.value.trim().toLocaleLowerCase() : '';
+    document.querySelectorAll('.entry-item').forEach(item => {
+        item.classList.toggle('hidden', Boolean(query) && !item.dataset.search.includes(query));
+    });
 }
 
 function setMood(mood) {
@@ -444,16 +476,25 @@ function removeMusic() {
     renderMusicEmbed();
 }
 
-function handlePhotoUpload(e) {
+async function handlePhotoUpload(e) {
     const files = Array.from(e.target.files || []);
-    files.forEach(file => {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const dataUrl = ev.target.result;
+    for (const file of files) {
+        if (!file.type.startsWith('image/')) {
+            alert(`${file.name} is not an image and was skipped.`);
+            continue;
+        }
+        if (file.size > MAX_PHOTO_BYTES) {
+            alert(`${file.name} is larger than 8 MB and was skipped.`);
+            continue;
+        }
+        try {
+            const dataUrl = await blobToDataURL(file);
             addPhotoFromDataUrl(dataUrl, file.type || 'image/jpeg');
-        };
-        reader.readAsDataURL(file);
-    });
+        } catch (error) {
+            console.error('Could not read image', error);
+            alert(`Could not read ${file.name}.`);
+        }
+    }
     e.target.value = '';
 }
 
@@ -596,7 +637,7 @@ async function selectEntry(id) {
     setMood(mood || '');
 
     const musicStr = decrypt(entry.music, encryptionKey);
-    currentMusic = musicStr ? JSON.parse(musicStr) : null;
+    try { currentMusic = musicStr ? JSON.parse(musicStr) : null; } catch (error) { currentMusic = null; }
     renderMusicEmbed();
 
     const photos = await getPhotosByEntryDB(id);
@@ -640,6 +681,12 @@ async function saveEntry() {
     const title = document.getElementById('entryTitle').value.trim();
     const date = document.getElementById('entryDate').value;
     const content = document.getElementById('entryContent').value;
+
+    if (!date) {
+        alert('Please choose a date for this page.');
+        document.getElementById('entryDate').focus();
+        return;
+    }
 
     if (!content.trim() && !title && !currentMood && !currentMusic && currentPhotos.length === 0) {
         alert('Please write something, pick a mood, attach a song, or add some photos.');
